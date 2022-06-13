@@ -1,0 +1,8 @@
+dev:
+  db_dsn: user=postgres dbname=link-contractor sslmode=disable host=localhost port=5432
+  redirect_host: 'https://localhost:80'
+  retries_link_create_count: 5
+  work_port: :8080
+  max_conn: 20
+vk:
+#  to_be_continue

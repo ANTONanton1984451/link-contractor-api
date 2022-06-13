@@ -1,12 +1,14 @@
 package dev
 
 type (
-	GeneratedLinkResponse struct {
-		Link string `json:"link"`
-	}
-
 	OkResponse struct {
 		Status string `json:"status"`
+		Result string `json:"result"`
+	}
+
+	FailResponse struct {
+		Status string `json:"status"`
+		Reason string `json:"reason"`
 	}
 
 	ListLinks struct {
@@ -22,5 +24,6 @@ type (
 )
 
 const (
-	_okStatus = "OK"
+	_okStatus   = "OK"
+	_failStatus = "FAIL"
 )

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dev form</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container">
+        <div class="row align-center justify-content-center" style="height: 100vh">
+            <div class="col-2  row  justify-content-center">
+                <div>
+                    <label for="phrase">Фраза</label>
+                    <textarea type="text" id="phrase"></textarea>
+                    <label for="user_external_id">User external id</label>
+                    <input type="text" id="user_external_id">
+                    <button id="send_to_bot" class="m-3 btn btn-primary" onclick="doReq()">Отправить боту</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    phrase = document.getElementById("phrase")
+    uei = document.getElementById("user_external_id")
+
+    async function notify() {
+        pl = {
+            user_phrase: phrase.value,
+            user_external_id: parseInt(uei.value)
+        }
+
+        pl = JSON.stringify(pl)
+
+        response = await fetch("/dev", {
+            method: "POST",
+            body: pl
+        })
+        return response.json()
+    }
+
+
+    function doReq() {
+        notify().then((data) => {
+            if (data.status === "FAIL") {
+                alert("ОШИБКА - " + data.reason)
+            } else {
+                alert("ОТВЕТ БОТА - " + data.result)
+            }
+        })
+    }
+</script>
+</html>

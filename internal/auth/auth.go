@@ -2,35 +2,20 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"link-contractor-api/internal/entrypoint"
 	"time"
 )
 
 type (
-	Auth interface {
-		GetUser(ctx context.Context, externalID int64) (User, error)
-	}
-
 	BanList interface {
-		InBan(ctx context.Context, user User) (bool, error)
+		InBan(ctx context.Context, user entrypoint.User) (bool, *time.Time, error)
 	}
 
 	UserRepo interface {
-		GetByExternalID(ctx context.Context, externalID int64) (User, error)
+		// если юзера не было - зарегать его
+		GetByExternalID(ctx context.Context, externalID int64) (entrypoint.User, error)
 	}
-
-	User struct {
-		Name         string
-		SurName      string
-		ID           int64
-		ExternalID   int64
-		RegisteredAt time.Time
-	}
-)
-
-var (
-	UserInBanErr = errors.New("user in ban")
 )
 
 type auth struct {
@@ -38,20 +23,27 @@ type auth struct {
 	userRepo UserRepo
 }
 
-func (a *auth) GetUser(ctx context.Context, externalID int64) (User, error) {
+func (a *auth) GetUser(ctx context.Context, externalID int64) (entrypoint.User, error) {
 	user, err := a.userRepo.GetByExternalID(ctx, externalID)
 	if err != nil {
-		return User{}, fmt.Errorf("get user by externalID: %w", err)
+		return entrypoint.User{}, fmt.Errorf("get user by externalID: %w", err)
 	}
 
-	inBan, err := a.banList.InBan(ctx, user)
+	inBan, until, err := a.banList.InBan(ctx, user)
 	if err != nil {
-		return User{}, fmt.Errorf("check user in ban list: %w", err)
+		return entrypoint.User{}, fmt.Errorf("check user in ban list: %w", err)
 	}
 
 	if inBan {
-		return User{}, UserInBanErr
+		return entrypoint.User{}, entrypoint.UserInBanErr{Until: until}
 	}
 
 	return user, err
+}
+
+func New(bl BanList, uRepo UserRepo) *auth {
+	return &auth{
+		banList:  bl,
+		userRepo: uRepo,
+	}
 }

@@ -20,6 +20,10 @@ type (
 		PathExist(ctx context.Context, path string) (bool, error)
 	}
 
+	Validation interface {
+		ValidLink(link string) (bool, string)
+	}
+
 	Link struct {
 		Type          LinkType
 		Length        int64
@@ -56,15 +60,30 @@ const (
 )
 
 type usecase struct {
-	linkRepo LinkRepo
+	linkRepo   LinkRepo
+	validation Validation
 
 	createRetryCount int64
 }
 
+func New(lr LinkRepo, retryCount int64, validation Validation) CreateLink {
+	return &usecase{
+		linkRepo:   lr,
+		validation: validation,
+
+		createRetryCount: retryCount,
+	}
+}
+
 func (uc *usecase) Execute(ctx context.Context, link Link, user User) (GeneratedPath, error) {
+	valid, rule := uc.validation.ValidLink(link.RedirectTo)
+	if !valid {
+		return GeneratedPath{}, ValidateErr{
+			ValidateRule: rule,
+		}
+	}
 	hasLink, err := uc.linkRepo.UserHasThisLink(ctx, link.RedirectTo, user.ID)
 	if err != nil {
-		//todo продумать как такое отдавать юзеру и как реагировать
 		return GeneratedPath{}, fmt.Errorf("check user already has link: %w", err)
 	}
 
@@ -108,6 +127,7 @@ func (uc *usecase) Execute(ctx context.Context, link Link, user User) (Generated
 func (uc *usecase) generateRandomPath(ctx context.Context, length int64) (string, error) {
 	for i := int64(0); i < uc.createRetryCount; i++ {
 		path := link.GenerateRandomPath(length)
+		// гонка данных
 		exist, err := uc.linkRepo.PathExist(ctx, path)
 		if err != nil {
 			return "", fmt.Errorf("check exist generated path: %w", err)
