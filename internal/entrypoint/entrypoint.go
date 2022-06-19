@@ -5,10 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"link-contractor-api/internal/controllers"
+	"link-contractor-api/internal/entities/user"
 	"time"
 )
-
-// todo переименовать
 
 type (
 	PhraseManager interface {
@@ -16,7 +15,7 @@ type (
 	}
 
 	Auth interface {
-		GetUser(ctx context.Context, externalID int64) (User, error)
+		GetUser(ctx context.Context, usr user.User) (user.User, error)
 	}
 
 	Presenter interface {
@@ -24,22 +23,15 @@ type (
 		UnknownAction() ([]byte, error)
 	}
 
-	// todo мб  унести в ентитю
-	User struct {
-		Name         string
-		SurName      string
-		ID           int64
-		ExternalID   int64
-		RegisteredAt time.Time
-	}
-
-	ActionFunc func(user User) (controllers.Response, error)
+	ActionFunc func(user user.User) (controllers.Response, error)
 
 	Entrypoint struct {
 		auth      Auth
 		phManager PhraseManager
 		presenter Presenter
 	}
+
+	SourceType uint64
 
 	UserInBanErr struct {
 		Until *time.Time

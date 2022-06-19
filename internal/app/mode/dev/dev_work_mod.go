@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"link-contractor-api/internal/entities/user"
 	"link-contractor-api/internal/entrypoint"
 	"link-contractor-api/pkg/midddleware"
 	"net/http"
@@ -18,7 +19,7 @@ type (
 	}
 
 	UserPl struct {
-		UserExternalID int64 `json:"user_external_id"`
+		UserExternalID string `json:"user_external_id"`
 	}
 )
 
@@ -31,6 +32,7 @@ func StartWorking(ep entrypoint.Entrypoint, workPort string, logger *zap.Logger,
 		if err != nil {
 			return fmt.Errorf("read form: %w", err)
 		}
+
 		writer.Write(form)
 		return nil
 	}))
@@ -40,17 +42,25 @@ func StartWorking(ep entrypoint.Entrypoint, workPort string, logger *zap.Logger,
 		defer body.Close()
 
 		pl, err := io.ReadAll(body)
-		var up UserPl
-		if err := json.Unmarshal(pl, &up); err != nil {
-			return fmt.Errorf("unmarshal payload: %w", err)
-		}
-
 		if err != nil {
 			w.Write(pr.SomethingWentWrong())
 			return err
 		}
 
-		resp, err := ep.DoAction(r.Context(), up.UserExternalID, pl)
+		var up UserPl
+		if err := json.Unmarshal(pl, &up); err != nil {
+			w.Write(pr.SomethingWentWrong())
+			return fmt.Errorf("unmarshal payload: %w", err)
+		}
+
+		entityUser := user.User{
+			ExternalID: up.UserExternalID,
+			SourceType: user.DevSource,
+			Name:       "Test",
+			Surname:    "Test",
+		}
+
+		resp, err := ep.DoAction(r.Context(), entityUser, pl)
 		if err != nil {
 			w.Write(pr.SomethingWentWrong())
 			return err

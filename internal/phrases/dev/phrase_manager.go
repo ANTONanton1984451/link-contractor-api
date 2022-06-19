@@ -5,17 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"link-contractor-api/internal/controllers"
+	"link-contractor-api/internal/entities/user"
 	"link-contractor-api/internal/entrypoint"
 	"link-contractor-api/internal/usecase/link/activatepath"
 	"link-contractor-api/internal/usecase/link/create"
 	"link-contractor-api/internal/usecase/link/deactivatepath"
+	"link-contractor-api/internal/usecase/link/list"
 	"regexp"
 	"strconv"
 )
 
 type (
-	// todo сделать реализацию
-	DevActionsPesenter interface {
+	ActionsPresenter interface {
+		DontUnderstand() []byte
+		WhatTypeLinks() []byte
 	}
 
 	Cntrls struct {
@@ -57,26 +60,26 @@ func (pm *phraseManager) GetAction(ctx context.Context, input []byte) (entrypoin
 	return nil, entrypoint.UnknownActionErr
 }
 
-func New(c Cntrls) entrypoint.PhraseManager {
+func New(c Cntrls, actionsPresenter ActionsPresenter) entrypoint.PhraseManager {
 	pm := phraseManager{
 		ctrl: ctrls{
 			linkCtrl: c.LinkCtrl,
 		},
-		actions: initActions(),
+		actions: initActions(actionsPresenter),
 	}
 
 	return &pm
 }
 
-func initActions() []phraseAction {
+func initActions(ap ActionsPresenter) []phraseAction {
 	return []phraseAction{
 		{
-			phrasePattern: regexp.MustCompile(`^Создай рандомную ссылку с длиной (?P<Length>[0-9]+), которая перебрасывает на (?P<Link>.*)$`),
+			phrasePattern: regexp.MustCompile(`^((С)|(с))оздай рандомную ссылку с длиной (?P<Length>[0-9]+), которая перебрасывает на (?P<Link>.*)$`),
 			makeActionFunc: func(ctx context.Context, c ctrls, r *regexp.Regexp, inputPhrase string) (entrypoint.ActionFunc, error) {
 
 				resMap := findGroups(inputPhrase, r, "Length", "Link")
 				if resMap == nil {
-					return dontUnderstandAction, nil
+					return dontUnderstand(ap), nil
 				}
 
 				link := resMap["Link"]
@@ -88,10 +91,10 @@ func initActions() []phraseAction {
 				}
 
 				if link == "" || length == 0 {
-					return dontUnderstandAction, nil
+					return dontUnderstand(ap), nil
 				}
 
-				return func(user entrypoint.User) (controllers.Response, error) {
+				return func(user user.User) (controllers.Response, error) {
 					linkToCreate := create.Link{
 						Type:       create.Random,
 						Length:     length,
@@ -105,18 +108,18 @@ func initActions() []phraseAction {
 			},
 		},
 		{
-			phrasePattern: regexp.MustCompile(`^Создай ссылку, которая будет иметь идентификатор (?P<Path>.*) и будет перебрасывать на (?P<Link>.*)$`),
+			phrasePattern: regexp.MustCompile(`^((С)|(с))оздай ссылку, которая будет иметь идентификатор (?P<Path>.*) и будет вести на (?P<Link>.*)$`),
 			makeActionFunc: func(ctx context.Context, c ctrls, r *regexp.Regexp, inputPhrase string) (entrypoint.ActionFunc, error) {
 				resMap := findGroups(inputPhrase, r, "Path", "Link")
 				if resMap == nil {
-					return dontUnderstandAction, nil
+					return dontUnderstand(ap), nil
 				}
 
 				if resMap["Path"] == "" || resMap["Link"] == "" {
-					return dontUnderstandAction, nil
+					return dontUnderstand(ap), nil
 				}
 
-				return func(user entrypoint.User) (controllers.Response, error) {
+				return func(user user.User) (controllers.Response, error) {
 					linkToCreate := create.Link{
 						Type:          create.UserGenerated,
 						RedirectTo:    resMap["Link"],
@@ -130,37 +133,59 @@ func initActions() []phraseAction {
 			},
 		},
 		{
-			phrasePattern: regexp.MustCompile(`^Деактивируй ссылку с идентификатором (?P<Path>.*)$`),
+			phrasePattern: regexp.MustCompile(`^((Д)|(д))еактивируй ссылку с идентификатором (?P<Path>.*)$`),
 			makeActionFunc: func(ctx context.Context, c ctrls, r *regexp.Regexp, inputPhrase string) (entrypoint.ActionFunc, error) {
 				resMap := findGroups(inputPhrase, r, "Path")
 				if resMap == nil {
-					return dontUnderstandAction, nil
+					return dontUnderstand(ap), nil
 				}
 
 				if resMap["Path"] == "" {
-					return dontUnderstandAction, nil
+					return dontUnderstand(ap), nil
 				}
 
-				return func(user entrypoint.User) (controllers.Response, error) {
+				return func(user user.User) (controllers.Response, error) {
 					return c.linkCtrl.DeactivatePath(ctx, deactivatepath.Path{Path: resMap["Path"]}, deactivatepath.User{ID: user.ID})
 				}, nil
 			},
 		},
 
 		{
-			phrasePattern: regexp.MustCompile(`^Aктивируй ссылку с идентификатором (?P<Path>.*)$`),
+			phrasePattern: regexp.MustCompile(`^((А)|(а))ктивируй ссылку с идентификатором (?P<Path>.*)$`),
 			makeActionFunc: func(ctx context.Context, c ctrls, r *regexp.Regexp, inputPhrase string) (entrypoint.ActionFunc, error) {
 				resMap := findGroups(inputPhrase, r, "Path")
 				if resMap == nil {
-					return dontUnderstandAction, nil
+					return dontUnderstand(ap), nil
 				}
 
 				if resMap["Path"] == "" {
-					return dontUnderstandAction, nil
+					return dontUnderstand(ap), nil
 				}
 
-				return func(user entrypoint.User) (controllers.Response, error) {
+				return func(user user.User) (controllers.Response, error) {
 					return c.linkCtrl.ActivatePath(ctx, activatepath.Path{Path: resMap["Path"]}, activatepath.User{ID: user.ID})
+				}, nil
+			},
+		},
+		{
+			phrasePattern: regexp.MustCompile(`^((П)|(п))окажи мне все мои ссылки$`),
+			makeActionFunc: func(ctx context.Context, c ctrls, r *regexp.Regexp, inputPhrase string) (entrypoint.ActionFunc, error) {
+				return whatTypeLinks(ap), nil
+			},
+		},
+		{
+			phrasePattern: regexp.MustCompile(`^((С)|(с)) неактивными$`),
+			makeActionFunc: func(ctx context.Context, c ctrls, r *regexp.Regexp, inputPhrase string) (entrypoint.ActionFunc, error) {
+				return func(user user.User) (controllers.Response, error) {
+					return c.linkCtrl.ListLinks(ctx, user, list.SelectOption{OnlyActive: false})
+				}, nil
+			},
+		},
+		{
+			phrasePattern: regexp.MustCompile(`^((Т)|(т))олько активные$`),
+			makeActionFunc: func(ctx context.Context, c ctrls, r *regexp.Regexp, inputPhrase string) (entrypoint.ActionFunc, error) {
+				return func(user user.User) (controllers.Response, error) {
+					return c.linkCtrl.ListLinks(ctx, user, list.SelectOption{OnlyActive: true})
 				}, nil
 			},
 		},
@@ -185,10 +210,6 @@ func findGroups(input string, re *regexp.Regexp, groups ...string) map[string]st
 	}
 
 	return resMap
-}
-
-var dontUnderstandAction = func(user entrypoint.User) (controllers.Response, error) {
-	return controllers.Response{Output: []byte(`Я не понимаю что ты имеешь ввиду`)}, nil
 }
 
 // https://tproger.ru/articles/puteshestvie-v-golang-regexp/

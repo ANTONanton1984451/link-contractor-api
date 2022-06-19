@@ -34,6 +34,10 @@ type usecase struct {
 	linkRepo LinkRepo
 }
 
+func New(linkRepo LinkRepo) DeactivatePath {
+	return &usecase{linkRepo: linkRepo}
+}
+
 func (uc *usecase) Execute(ctx context.Context, path Path, user User) error {
 	isOwn, err := uc.linkRepo.UserOwnThisPath(ctx, path.Path, user.ID)
 	if err != nil {

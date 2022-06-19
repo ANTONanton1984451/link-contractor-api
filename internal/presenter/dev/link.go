@@ -11,7 +11,7 @@ type (
 )
 
 func (p *linkPresenter) ShowGeneratedLink(link controllers.GeneratedLink) (controllers.Response, error) {
-	// todo пофиксить
+
 	response, err := json.Marshal(OkResponse{Status: _okStatus, Result: fmt.Sprintf("Ваша ссылка - %s", link.Link)})
 	if err != nil {
 		return controllers.Response{}, fmt.Errorf("marshal: %w", err)
@@ -21,7 +21,7 @@ func (p *linkPresenter) ShowGeneratedLink(link controllers.GeneratedLink) (contr
 }
 
 func (p *linkPresenter) ActivateOK() (controllers.Response, error) {
-	response, err := json.Marshal(OkResponse{Status: _okStatus})
+	response, err := json.Marshal(OkResponse{Status: _okStatus, Result: `ссылка активирована`})
 	if err != nil {
 		return controllers.Response{}, fmt.Errorf("marshal: %w", err)
 	}
@@ -30,7 +30,7 @@ func (p *linkPresenter) ActivateOK() (controllers.Response, error) {
 }
 
 func (p *linkPresenter) DeactivateOK() (controllers.Response, error) {
-	response, err := json.Marshal(OkResponse{Status: _okStatus})
+	response, err := json.Marshal(OkResponse{Status: _okStatus, Result: `ссылка деактивирована`})
 	if err != nil {
 		return controllers.Response{}, fmt.Errorf("marshal: %w", err)
 	}
@@ -39,6 +39,10 @@ func (p *linkPresenter) DeactivateOK() (controllers.Response, error) {
 }
 
 func (p *linkPresenter) ListLinks(linkList []controllers.ListLink) (controllers.Response, error) {
+	if len(linkList) == 0 {
+		resp, _ := json.Marshal(OkResponse{Status: _okStatus, Result: `у тебя нет ссылок на данный момент`})
+		return controllers.Response{Output: resp}, nil
+	}
 	links := make([]Link, 0, len(linkList))
 
 	for _, l := range linkList {

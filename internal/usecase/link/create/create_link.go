@@ -7,7 +7,6 @@ import (
 	"link-contractor-api/internal/entities/link"
 )
 
-// todo валидация пользовательских ссылок
 type (
 	CreateLink interface {
 		Execute(ctx context.Context, link Link, user User) (GeneratedPath, error)
@@ -16,12 +15,11 @@ type (
 	LinkRepo interface {
 		UserHasThisLink(ctx context.Context, linkToCheck string, userID int64) (bool, error)
 		InsertLink(ctx context.Context, link NewLink) error
-		// Под вопросом, мб такого не будет
-		PathExist(ctx context.Context, path string) (bool, error)
 	}
 
 	Validation interface {
 		ValidLink(link string) (bool, string)
+		ValidPath(path string) (bool, string)
 	}
 
 	Link struct {
@@ -92,49 +90,52 @@ func (uc *usecase) Execute(ctx context.Context, link Link, user User) (Generated
 	}
 
 	var path string
-
-	switch link.Type {
-	case Random:
-		randomPath, err := uc.generateRandomPath(ctx, link.Length)
-		if err != nil {
-			return GeneratedPath{}, fmt.Errorf("generate random path: %w", err)
-		}
-		path = randomPath
-	case UserGenerated:
-		exist, err := uc.linkRepo.PathExist(ctx, link.UserGenerated)
-		if err != nil {
-			return GeneratedPath{}, fmt.Errorf("check exist user path: %w", err)
-		}
-		if exist {
-			return GeneratedPath{}, PathIsBusy
-		}
-
-		path = link.UserGenerated
-	}
-
-	err = uc.linkRepo.InsertLink(ctx, NewLink{
+	newLink := NewLink{
 		Type:       link.Type,
 		RedirectTo: link.RedirectTo,
 		UserID:     user.ID,
-		Path:       path,
-	})
-	if err != nil {
-		return GeneratedPath{}, fmt.Errorf("insert link: %w", err)
 	}
+
+	switch link.Type {
+	case Random:
+		path, err = uc.insetRandomPath(ctx, link.Length, newLink)
+		if err != nil {
+			return GeneratedPath{}, fmt.Errorf("insert link with random path: %w", err)
+		}
+	case UserGenerated:
+		valid, rule = uc.validation.ValidPath(link.UserGenerated)
+		if !valid {
+			return GeneratedPath{}, ValidateErr{
+				ValidateRule: rule,
+			}
+		}
+
+		newLink.Path = link.UserGenerated
+
+		err = uc.linkRepo.InsertLink(ctx, newLink)
+		if err != nil {
+			return GeneratedPath{}, fmt.Errorf("insert link with user path: %w", err)
+		}
+		path = link.UserGenerated
+	}
+
 	return GeneratedPath{Path: path}, nil
 }
 
-func (uc *usecase) generateRandomPath(ctx context.Context, length int64) (string, error) {
+func (uc *usecase) insetRandomPath(ctx context.Context, length int64, newLink NewLink) (string, error) {
 	for i := int64(0); i < uc.createRetryCount; i++ {
 		path := link.GenerateRandomPath(length)
-		// гонка данных
-		exist, err := uc.linkRepo.PathExist(ctx, path)
+
+		newLink.Path = path
+		err := uc.linkRepo.InsertLink(ctx, newLink)
 		if err != nil {
-			return "", fmt.Errorf("check exist generated path: %w", err)
+			if errors.Is(PathIsBusy, err) {
+				continue
+			}
+			return "", fmt.Errorf("insert link: %w", err)
 		}
-		if !exist {
-			return path, nil
-		}
+
+		return path, nil
 	}
 
 	return "", fmt.Errorf("cannot create uniq path for %d retries", uc.createRetryCount)

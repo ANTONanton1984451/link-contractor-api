@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"link-contractor-api/internal/entities/user"
 )
 
-func (m *Entrypoint) DoAction(ctx context.Context, userExternalID int64, input []byte) ([]byte, error) {
-	user, err := m.auth.GetUser(ctx, userExternalID)
+func (m *Entrypoint) DoAction(ctx context.Context, usr user.User, input []byte) ([]byte, error) {
+	usr, err := m.auth.GetUser(ctx, usr)
 	if err != nil {
 		var uBan UserInBanErr
 		if errors.As(err, &uBan) {
@@ -25,7 +26,7 @@ func (m *Entrypoint) DoAction(ctx context.Context, userExternalID int64, input [
 		return nil, fmt.Errorf("get action: %w", err)
 	}
 
-	resp, err := action(user)
+	resp, err := action(usr)
 	if err != nil {
 		return nil, fmt.Errorf("execute action: %w", err)
 	}
