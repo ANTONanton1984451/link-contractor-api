@@ -7,6 +7,7 @@ import (
 	"link-contractor-api/internal/controllers"
 	"link-contractor-api/internal/entities/user"
 	"link-contractor-api/internal/entrypoint"
+	"link-contractor-api/internal/response"
 	"link-contractor-api/internal/usecase/link/activatepath"
 	"link-contractor-api/internal/usecase/link/create"
 	"link-contractor-api/internal/usecase/link/deactivatepath"
@@ -94,7 +95,7 @@ func initActions(ap ActionsPresenter) []phraseAction {
 					return dontUnderstand(ap), nil
 				}
 
-				return func(user user.User) (controllers.Response, error) {
+				return func(user user.User) (response.DTO, error) {
 					linkToCreate := create.Link{
 						Type:       create.Random,
 						Length:     length,
@@ -119,7 +120,7 @@ func initActions(ap ActionsPresenter) []phraseAction {
 					return dontUnderstand(ap), nil
 				}
 
-				return func(user user.User) (controllers.Response, error) {
+				return func(user user.User) (response.DTO, error) {
 					linkToCreate := create.Link{
 						Type:          create.UserGenerated,
 						RedirectTo:    resMap["Link"],
@@ -144,7 +145,7 @@ func initActions(ap ActionsPresenter) []phraseAction {
 					return dontUnderstand(ap), nil
 				}
 
-				return func(user user.User) (controllers.Response, error) {
+				return func(user user.User) (response.DTO, error) {
 					return c.linkCtrl.DeactivatePath(ctx, deactivatepath.Path{Path: resMap["Path"]}, deactivatepath.User{ID: user.ID})
 				}, nil
 			},
@@ -162,7 +163,7 @@ func initActions(ap ActionsPresenter) []phraseAction {
 					return dontUnderstand(ap), nil
 				}
 
-				return func(user user.User) (controllers.Response, error) {
+				return func(user user.User) (response.DTO, error) {
 					return c.linkCtrl.ActivatePath(ctx, activatepath.Path{Path: resMap["Path"]}, activatepath.User{ID: user.ID})
 				}, nil
 			},
@@ -176,7 +177,7 @@ func initActions(ap ActionsPresenter) []phraseAction {
 		{
 			phrasePattern: regexp.MustCompile(`^((С)|(с)) неактивными$`),
 			makeActionFunc: func(ctx context.Context, c ctrls, r *regexp.Regexp, inputPhrase string) (entrypoint.ActionFunc, error) {
-				return func(user user.User) (controllers.Response, error) {
+				return func(user user.User) (response.DTO, error) {
 					return c.linkCtrl.ListLinks(ctx, user, list.SelectOption{OnlyActive: false})
 				}, nil
 			},
@@ -184,7 +185,7 @@ func initActions(ap ActionsPresenter) []phraseAction {
 		{
 			phrasePattern: regexp.MustCompile(`^((Т)|(т))олько активные$`),
 			makeActionFunc: func(ctx context.Context, c ctrls, r *regexp.Regexp, inputPhrase string) (entrypoint.ActionFunc, error) {
-				return func(user user.User) (controllers.Response, error) {
+				return func(user user.User) (response.DTO, error) {
 					return c.linkCtrl.ListLinks(ctx, user, list.SelectOption{OnlyActive: true})
 				}, nil
 			},
@@ -217,11 +218,11 @@ func findGroups(input string, re *regexp.Regexp, groups ...string) map[string]st
 // Step(Phrase {
 //  []On{
 //		On:"bbbb",
-//      Action(input) controllers.Response {
+//      Action(input) response.DTO {
 //         do something
 //		},
 //		On:"aaaa",
-//      Action(input) controllers.Response {
+//      Action(input) response.DTO {
 //         do something other
 //		},
 //   }

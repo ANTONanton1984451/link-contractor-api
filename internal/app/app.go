@@ -1,11 +1,11 @@
 package app
 
 import (
-	"errors"
 	"fmt"
-	"link-contractor-api/internal/app/config"
 	"link-contractor-api/internal/app/dependencies"
 	"link-contractor-api/internal/app/mode/dev"
+	"link-contractor-api/internal/app/mode/vk"
+	"link-contractor-api/internal/config"
 )
 
 func Start() error {
@@ -19,35 +19,46 @@ func Start() error {
 		return fmt.Errorf("get config: %w", err)
 	}
 
-	lg, err := createLogger(sa.Wm)
+	lg, err := createLogger(workMod(cfg.WorkMod))
 	if err != nil {
 		return err
 	}
 
-	if initPoolErr := dependencies.InitPool(lg, cfg.Dev.DbDsn, cfg.Dev.MaxDbConn); initPoolErr != nil {
+	if initPoolErr := dependencies.InitPool(lg, cfg.DbDsn, cfg.MaxDbConn, cfg.ConnectDBRetries, cfg.ConnectDBRetriesWait); initPoolErr != nil {
 		return fmt.Errorf("init pool: %w", initPoolErr)
 	}
 
-	switch sa.Wm {
+	switch workMod(cfg.WorkMod) {
 	case _devMod:
-		if cfg.Dev == nil {
-			return errors.New("empty dev config")
-		}
 		return dev.StartWorking(dependencies.GetEntryPointForDev(dependencies.EntrypointConfig{
-			RedirectHost:              cfg.Dev.RedirectHost,
-			LinkUcRandomCreateRetries: cfg.Dev.RetriesLinkCreateCount,
-		}), cfg.Dev.WorkPort, lg, dependencies.GetHandlerPresenter())
+			RedirectHost:              cfg.RedirectHost,
+			LinkUcRandomCreateRetries: cfg.RetriesLinkCreateCount,
+		}), cfg.WorkPort, lg, dependencies.GetHandlerPresenter())
+	case _vkMod:
+		workModConfig := vk.Config{
+			WorkPort:     cfg.WorkPort,
+			ApiURL:       cfg.VkApiURL,
+			ApiVersion:   cfg.VkApiVersion,
+			AccessToken:  cfg.VkAccessToken,
+			ConfirmToken: cfg.VkConfirmToken,
+		}
+
+		epConfig := dependencies.EntrypointConfig{
+			RedirectHost:              cfg.RedirectHost,
+			LinkUcRandomCreateRetries: cfg.RetriesLinkCreateCount,
+
+			VkGroupUrl: cfg.VkGroupUrl,
+		}
+
+		// todo поменять презентор
+		return vk.StartWorking(dependencies.GetEntryPointForVk(epConfig), workModConfig, lg, dependencies.GetHandlerPresenter())
+	default:
+		return fmt.Errorf("unknown work mod %s", cfg.WorkMod)
 	}
 
-	return nil
 }
 
 type workMod string
-
-var workMods = map[workMod]struct{}{
-	_devMod: {},
-	_vkMod:  {},
-}
 
 const (
 	_devMod workMod = "dev"

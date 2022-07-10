@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"link-contractor-api/internal/entities/user"
+	"link-contractor-api/internal/response"
 	"link-contractor-api/internal/usecase/link/activatepath"
 	"link-contractor-api/internal/usecase/link/create"
 	"link-contractor-api/internal/usecase/link/deactivatepath"
@@ -13,10 +14,10 @@ import (
 
 type (
 	LinkController interface {
-		GenerateLink(ctx context.Context, link create.Link, user create.User) (Response, error)
-		ActivatePath(ctx context.Context, path activatepath.Path, user activatepath.User) (Response, error)
-		DeactivatePath(ctx context.Context, path deactivatepath.Path, user deactivatepath.User) (Response, error)
-		ListLinks(ctx context.Context, usr user.User, option list.SelectOption) (Response, error)
+		GenerateLink(ctx context.Context, link create.Link, user create.User) (response.DTO, error)
+		ActivatePath(ctx context.Context, path activatepath.Path, user activatepath.User) (response.DTO, error)
+		DeactivatePath(ctx context.Context, path deactivatepath.Path, user deactivatepath.User) (response.DTO, error)
+		ListLinks(ctx context.Context, usr user.User, option list.SelectOption) (response.DTO, error)
 	}
 	GeneratedLink struct {
 		Link string
@@ -30,17 +31,17 @@ type (
 	}
 
 	LinkPresent interface {
-		ShowGeneratedLink(link GeneratedLink) (Response, error)
-		ActivateOK() (Response, error)
-		DeactivateOK() (Response, error)
-		ListLinks(linkList []ListLink) (Response, error)
+		ShowGeneratedLink(link GeneratedLink) (response.DTO, error)
+		ActivateOK() (response.DTO, error)
+		DeactivateOK() (response.DTO, error)
+		ListLinks(linkList []ListLink) (response.DTO, error)
 		// todo возможно разделить на отдельные интерфейсы, пока оставим
-		LinkAlreadyExist(link string) (Response, error)
-		LinkIsBusy(path string) (Response, error)
+		LinkAlreadyExist(link string) (response.DTO, error)
+		LinkIsBusy(path string) (response.DTO, error)
 		// todo возможно разделить на отдельные интерфейсы, пока оставим
-		LinkDontExist(path string) (Response, error)
-		UserIsNotOwnerOfLink(path string) (Response, error)
-		ValidationFailed(rule string) (Response, error)
+		LinkDontExist(path string) (response.DTO, error)
+		UserIsNotOwnerOfLink(path string) (response.DTO, error)
+		ValidationFailed(rule string) (response.DTO, error)
 	}
 
 	linkController struct {
@@ -73,7 +74,7 @@ func NewLinkCtrl(lp LinkPresent,
 	}
 }
 
-func (ctrl *linkController) GenerateLink(ctx context.Context, link create.Link, user create.User) (Response, error) {
+func (ctrl *linkController) GenerateLink(ctx context.Context, link create.Link, user create.User) (response.DTO, error) {
 	path, err := ctrl.createLinkUc.Execute(ctx, link, user)
 	if err != nil {
 		if errors.Is(err, create.LinkAlreadyExistErr) {
@@ -88,14 +89,14 @@ func (ctrl *linkController) GenerateLink(ctx context.Context, link create.Link, 
 		if errors.As(err, &ve) {
 			return ctrl.presenter.ValidationFailed(ve.ValidateRule)
 		}
-		return Response{}, err
+		return response.DTO{}, err
 	}
 	newLink := ctrl.linkDomain + "/" + path.Path
 
 	return ctrl.presenter.ShowGeneratedLink(GeneratedLink{Link: newLink})
 }
 
-func (ctrl *linkController) ActivatePath(ctx context.Context, path activatepath.Path, user activatepath.User) (Response, error) {
+func (ctrl *linkController) ActivatePath(ctx context.Context, path activatepath.Path, user activatepath.User) (response.DTO, error) {
 	err := ctrl.activatePathUc.Execute(ctx, path, user)
 	if err != nil {
 		if errors.Is(err, activatepath.PathDontExistErr) {
@@ -105,13 +106,13 @@ func (ctrl *linkController) ActivatePath(ctx context.Context, path activatepath.
 		if errors.Is(err, activatepath.UserIsNotOwnerOfPathErr) {
 			return ctrl.presenter.UserIsNotOwnerOfLink(ctrl.formRedirectLink(path.Path))
 		}
-		return Response{}, err
+		return response.DTO{}, err
 	}
 
 	return ctrl.presenter.ActivateOK()
 }
 
-func (ctrl *linkController) DeactivatePath(ctx context.Context, path deactivatepath.Path, user deactivatepath.User) (Response, error) {
+func (ctrl *linkController) DeactivatePath(ctx context.Context, path deactivatepath.Path, user deactivatepath.User) (response.DTO, error) {
 	err := ctrl.deactivatePathUc.Execute(ctx, path, user)
 	if err != nil {
 		if errors.Is(err, deactivatepath.PathDontExistErr) {
@@ -121,16 +122,16 @@ func (ctrl *linkController) DeactivatePath(ctx context.Context, path deactivatep
 		if errors.Is(err, deactivatepath.UserIsNotOwnerOfPathErr) {
 			return ctrl.presenter.UserIsNotOwnerOfLink(ctrl.formRedirectLink(path.Path))
 		}
-		return Response{}, err
+		return response.DTO{}, err
 	}
 
 	return ctrl.presenter.DeactivateOK()
 }
 
-func (ctrl *linkController) ListLinks(ctx context.Context, usr user.User, option list.SelectOption) (Response, error) {
+func (ctrl *linkController) ListLinks(ctx context.Context, usr user.User, option list.SelectOption) (response.DTO, error) {
 	links, err := ctrl.listLinks.Execute(ctx, usr, option)
 	if err != nil {
-		return Response{}, err
+		return response.DTO{}, err
 	}
 	linksToPresent := make([]ListLink, 0, len(links))
 	for _, l := range links {

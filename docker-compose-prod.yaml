@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:latest
+    container_name: database
+    restart: always
+    ## ждём пока стартанёт постгри
+    healthcheck:
+      test: /usr/bin/pg_isready
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    volumes:
+      - ~/link-contractor-data-prod/:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    env_file:
+      - config/prod.env
+
+  link-contractor:
+    container_name: app
+    entrypoint: [ "bash","scripts/start_prod.sh","config/prod.env" ]
+    build:
+      context: .
+      dockerfile: ./build/package/Dockerfile
+    ## докер дожидается старта контейнера постгрес,но сам постгрес ещё не может принимать конекшены, поэтому мы ждём хелзчека
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - default
+    ports:
+      - "80:80"

@@ -5,6 +5,7 @@ import (
 	"errors"
 )
 
+// todo не актуально
 type (
 	RegisterUser interface {
 		Execute(context.Context, User) error

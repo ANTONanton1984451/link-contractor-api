@@ -10,17 +10,17 @@ type (
 )
 
 func (mp *entryPointPresenter) InBan(until *time.Time) ([]byte, error) {
-	response := FailResponse{
+	resp := FailResponse{
 		Status: _failStatus,
 	}
 
 	if until != nil {
-		response.Reason = userInBanUntilTime(*until)
+		resp.Reason = userInBanUntilTime(*until)
 	} else {
-		response.Reason = userInPermanentBan()
+		resp.Reason = userInPermanentBan()
 	}
 
-	return json.Marshal(response)
+	return json.Marshal(resp)
 }
 
 func (mp *entryPointPresenter) UnknownAction() ([]byte, error) {

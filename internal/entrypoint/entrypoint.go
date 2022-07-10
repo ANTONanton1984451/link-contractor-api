@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"link-contractor-api/internal/controllers"
 	"link-contractor-api/internal/entities/user"
+	"link-contractor-api/internal/response"
 	"time"
 )
 
@@ -23,7 +23,7 @@ type (
 		UnknownAction() ([]byte, error)
 	}
 
-	ActionFunc func(user user.User) (controllers.Response, error)
+	ActionFunc func(user user.User) (response.DTO, error)
 
 	Entrypoint struct {
 		auth      Auth
