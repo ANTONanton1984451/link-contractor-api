@@ -13,6 +13,7 @@ var _connPool *pgx.ConnPool
 
 type pgxPool struct{}
 
+// InitPool инициализация коннекшн пула
 func InitPool(logger pgx.Logger, dbDsn string, maxConn, connectRetriesCount int64, retryWait time.Duration) error {
 	connCfg, err := pgx.ParseDSN(dbDsn)
 	if err != nil {

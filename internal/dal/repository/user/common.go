@@ -21,11 +21,6 @@ const (
 	_vkSource  = `vk`
 )
 
-const (
-	_name    = `Anton`
-	_surname = `Shushpanov`
-)
-
 var entrypointInnerSource = map[userEntity.SourceType]string{
 	userEntity.DevSource: _devSource,
 	userEntity.VkSource:  _vkSource,

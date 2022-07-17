@@ -1,6 +1,5 @@
 FROM golang:latest
-## todo  нужно сборку тоже сделать через докер файл
-## работа с миграциями
+# todo сделать комиляцию на ходу
 WORKDIR /app
 COPY . .
 RUN go mod download

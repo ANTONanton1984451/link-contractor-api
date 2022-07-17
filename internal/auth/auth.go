@@ -14,7 +14,6 @@ type (
 	}
 
 	UserRepo interface {
-		// если юзера не было - зарегать его
 		GetByExternalID(ctx context.Context, user user.User) (user.User, error)
 	}
 )
@@ -24,6 +23,7 @@ type auth struct {
 	userRepo UserRepo
 }
 
+// GetUser получаем пользователя по external id и поверяем, в бане ли он сейчас
 func (a *auth) GetUser(ctx context.Context, usr user.User) (user.User, error) {
 	usr, err := a.userRepo.GetByExternalID(ctx, usr)
 	if err != nil {

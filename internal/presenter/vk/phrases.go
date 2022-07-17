@@ -15,7 +15,7 @@ func youDontHaveLinks() string {
 }
 
 func formLink(lnk controllers.ListLink) string {
-	message := fmt.Sprintf("Ссылка %s, ведеёт на %s, создана %s", lnk.From, lnk.To, lnk.CreatedAt)
+	message := fmt.Sprintf("Ссылка %s, ведёт на %s, создана %s", lnk.From, lnk.To, lnk.CreatedAt)
 	if !lnk.Active {
 		message += " , не активна"
 	}

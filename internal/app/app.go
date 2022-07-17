@@ -8,6 +8,7 @@ import (
 	"link-contractor-api/internal/config"
 )
 
+// Start старт приложения
 func Start() error {
 	sa, err := getStartArgs()
 	if err != nil {
@@ -30,10 +31,10 @@ func Start() error {
 
 	switch workMod(cfg.WorkMod) {
 	case _devMod:
-		return dev.StartWorking(dependencies.GetEntryPointForDev(dependencies.EntrypointConfig{
+		return dev.StartWorking(dependencies.GetEntrypointForDev(dependencies.EntrypointConfig{
 			RedirectHost:              cfg.RedirectHost,
 			LinkUcRandomCreateRetries: cfg.RetriesLinkCreateCount,
-		}), cfg.WorkPort, lg, dependencies.GetHandlerPresenter())
+		}), cfg.WorkPort, lg, dependencies.GetHandlerPresenterForDev())
 	case _vkMod:
 		workModConfig := vk.Config{
 			WorkPort:     cfg.WorkPort,
@@ -50,8 +51,11 @@ func Start() error {
 			VkGroupUrl: cfg.VkGroupUrl,
 		}
 
-		// todo поменять презентор
-		return vk.StartWorking(dependencies.GetEntryPointForVk(epConfig), workModConfig, lg, dependencies.GetHandlerPresenter())
+		return vk.StartWorking(dependencies.GetEntrypointForVk(epConfig),
+			workModConfig,
+			lg,
+			dependencies.GetHandlerPresenterForVk(),
+			dependencies.GetLinkRepository())
 	default:
 		return fmt.Errorf("unknown work mod %s", cfg.WorkMod)
 	}

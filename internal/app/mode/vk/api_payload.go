@@ -1,10 +1,12 @@
 package vk
 
+// Event событие в вк
 type Event struct {
 	Type   string `json:"type"`
 	Object Object `json:"object"`
 }
 
+// Object объект события, в данном случае сообщение
 type Object struct {
 	Message struct {
 		ID       uint64 `json:"id"`

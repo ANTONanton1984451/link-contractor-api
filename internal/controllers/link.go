@@ -74,6 +74,7 @@ func NewLinkCtrl(lp LinkPresent,
 	}
 }
 
+// GenerateLink запускаем юзкейс создания ссылки и обрабатываем ошибки, полученные из него
 func (ctrl *linkController) GenerateLink(ctx context.Context, link create.Link, user create.User) (response.DTO, error) {
 	path, err := ctrl.createLinkUc.Execute(ctx, link, user)
 	if err != nil {
@@ -86,6 +87,7 @@ func (ctrl *linkController) GenerateLink(ctx context.Context, link create.Link, 
 		}
 
 		var ve create.ValidateErr
+
 		if errors.As(err, &ve) {
 			return ctrl.presenter.ValidationFailed(ve.ValidateRule)
 		}
@@ -96,6 +98,7 @@ func (ctrl *linkController) GenerateLink(ctx context.Context, link create.Link, 
 	return ctrl.presenter.ShowGeneratedLink(GeneratedLink{Link: newLink})
 }
 
+// ActivatePath запускаем юзкейс активирования пути и обрабатываем ошибки, получаемые из него
 func (ctrl *linkController) ActivatePath(ctx context.Context, path activatepath.Path, user activatepath.User) (response.DTO, error) {
 	err := ctrl.activatePathUc.Execute(ctx, path, user)
 	if err != nil {
@@ -112,6 +115,7 @@ func (ctrl *linkController) ActivatePath(ctx context.Context, path activatepath.
 	return ctrl.presenter.ActivateOK()
 }
 
+// DeactivatePath запускаем юзкейс деактивации пути и обрабатываем ошибки, получаемые из него
 func (ctrl *linkController) DeactivatePath(ctx context.Context, path deactivatepath.Path, user deactivatepath.User) (response.DTO, error) {
 	err := ctrl.deactivatePathUc.Execute(ctx, path, user)
 	if err != nil {
@@ -128,6 +132,7 @@ func (ctrl *linkController) DeactivatePath(ctx context.Context, path deactivatep
 	return ctrl.presenter.DeactivateOK()
 }
 
+// ListLinks получаем список ссылок пользвателя и формируем их для ответа
 func (ctrl *linkController) ListLinks(ctx context.Context, usr user.User, option list.SelectOption) (response.DTO, error) {
 	links, err := ctrl.listLinks.Execute(ctx, usr, option)
 	if err != nil {

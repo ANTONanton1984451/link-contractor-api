@@ -7,6 +7,7 @@ type linkValidator struct {
 	pathRegExp *regexp.Regexp
 }
 
+// ValidLink импелементация интерфейса юзкейса создания ссылки
 func (lv *linkValidator) ValidLink(link string) (bool, string) {
 	if lv.linkRegExp.MatchString(link) {
 		return true, ""
@@ -15,6 +16,7 @@ func (lv *linkValidator) ValidLink(link string) (bool, string) {
 	return false, linkNotValid()
 }
 
+// ValidPath импелементация интерфейса юзкейса создания пути для укороченной ссылки
 func (lv *linkValidator) ValidPath(path string) (bool, string) {
 	if lv.pathRegExp.MatchString(path) {
 		return true, ""

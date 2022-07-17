@@ -41,6 +41,7 @@ type (
 	}
 )
 
+// GetAction сверяет фразу пользователя с экшеном и отдаёт нужный экш, сверка проходит через регулярные выражения
 func (pm *phraseManager) GetAction(ctx context.Context, input []byte) (entrypoint.ActionFunc, error) {
 
 	for _, a := range pm.actions {

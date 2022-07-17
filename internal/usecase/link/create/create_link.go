@@ -73,6 +73,8 @@ func New(lr LinkRepo, retryCount int64, validation Validation) CreateLink {
 	}
 }
 
+// Execute сценарий создания ссылки, сначала проверяем что пользователь уже имеет данную ссылку, а азтем генерируем сылку на основе запроса -
+// либо генерим рандомную ссылку, либо создаёт ссылку, которую указал пользователь
 func (uc *usecase) Execute(ctx context.Context, link Link, user User) (GeneratedPath, error) {
 	valid, rule := uc.validation.ValidLink(link.RedirectTo)
 	if !valid {

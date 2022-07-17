@@ -7,6 +7,8 @@ import (
 	"link-contractor-api/internal/entities/user"
 )
 
+// DoAction вход в бизнес-логику приложения,
+// Entrypoint получает пользователя, получает у менеджера фраз нужный экш и отдаёт результат выполнения экшена
 func (m *Entrypoint) DoAction(ctx context.Context, usr user.User, input []byte) ([]byte, error) {
 	usr, err := m.auth.GetUser(ctx, usr)
 	if err != nil {

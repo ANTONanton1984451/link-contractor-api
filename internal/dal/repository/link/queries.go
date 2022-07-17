@@ -42,3 +42,7 @@ func listLinks(onlyActive bool, userID int64) (string, []interface{}) {
 	}
 	return `SELECT path,redirect_to,active,created_at FROM link WHERE owner_id = $1`, []interface{}{userID}
 }
+
+func getLinkQuery(path string) (string, []interface{}) {
+	return `SELECT path,redirect_to,active,created_at FROM link WHERE path = $1`, []interface{}{path}
+}

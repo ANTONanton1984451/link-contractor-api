@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"link-contractor-api/internal/entities/link"
 	"link-contractor-api/internal/entities/user"
 	"link-contractor-api/internal/entrypoint"
 	"net/http"
 	url "net/url"
 	"strconv"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -18,11 +20,34 @@ type (
 	Presenter interface {
 		SomethingWentWrong() []byte
 	}
+
+	LinkRepo interface {
+		Get(ctx context.Context, path string) (*link.Link, error)
+	}
 )
 
-func StartWorking(ep entrypoint.Entrypoint, cfg Config, log *zap.Logger, pr Presenter) error {
+// StartWorking запуск работы для вк, инициализирует сервер для CallBack api и для редиректа ссылок
+func StartWorking(ep entrypoint.Entrypoint, cfg Config, log *zap.Logger, pr Presenter, repo LinkRepo) error {
 	mux := http.NewServeMux()
 	logger := log.Sugar()
+
+	mux.HandleFunc("/r/", func(writer http.ResponseWriter, request *http.Request) {
+		path := request.URL.Path
+		path = strings.TrimLeft(path, "/r/")
+
+		link, err := repo.Get(request.Context(), path)
+		if err != nil {
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if link == nil || link.Active == false {
+			writer.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		http.Redirect(writer, request, link.RedirectTo, http.StatusFound)
+	})
 
 	mux.HandleFunc("/vk", middleWare(cfg, logger, pr, func(ctx context.Context, event Event) (handleResult, error) {
 		switch event.Type {
@@ -105,7 +130,6 @@ func sendMessage(logger *zap.SugaredLogger, token, apiVersion, vkURL, userID str
 	query.Set("user_id", userID)
 	query.Set("access_token", token)
 	query.Set("v", apiVersion)
-	// todo разобраться с этим
 	query.Set("random_id", "0")
 
 	requestUrl := &url.URL{}

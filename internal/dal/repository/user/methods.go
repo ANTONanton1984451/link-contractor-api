@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx"
 )
 
+// GetByExternalID имплементация интерфейса для компонента auth
 func (repo *repository) GetByExternalID(ctx context.Context, user userEntity.User) (userEntity.User, error) {
 	conn, err := repo.pool.GetConn(ctx)
 	if err != nil {
@@ -60,6 +61,7 @@ func (repo *repository) createUser(ctx context.Context, user userEntity.User) (u
 	return user, nil
 }
 
+// InBan имплементация интерфейса банлиста для компонента auth
 func (repo *repository) InBan(ctx context.Context, user userEntity.User) (bool, *time.Time, error) {
 	conn, err := repo.pool.GetConn(ctx)
 	if err != nil {

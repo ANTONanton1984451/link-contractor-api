@@ -9,15 +9,16 @@ import (
 )
 
 const (
-	_REDIRECT_HOST                    = "REDIRECT_HOST"
-	_POSTGRES_USER                    = "POSTGRES_USER"
-	_POSTGRES_DB                      = "POSTGRES_DB"
-	_PGSSLMODE                        = "PGSSLMODE"
-	_POSTGRES_HOST                    = "POSTGRES_HOST"
-	_POSTGRES_PORT                    = "POSTGRES_PORT"
-	_WORK_PORT                        = "WORK_PORT"
-	_WORK_MOD                         = "WORK_MOD"
-	_MAX_DB_CONN                      = "MAX_DB_CONN"
+	_REDIRECT_HOST = "REDIRECT_HOST"
+	_POSTGRES_USER = "POSTGRES_USER"
+	_POSTGRES_DB   = "POSTGRES_DB"
+	_PGSSLMODE     = "PGSSLMODE"
+	_POSTGRES_HOST = "POSTGRES_HOST"
+	_POSTGRES_PORT = "POSTGRES_PORT"
+	_WORK_PORT     = "WORK_PORT"
+	_WORK_MOD      = "WORK_MOD"
+	_MAX_DB_CONN   = "MAX_DB_CONN"
+	// _RETRIES_LINK_CREATE_COUNT  настройка для попытки пересоздать рандомную ссылку, если такая уже есть в базе
 	_RETRIES_LINK_CREATE_COUNT        = "RETRIES_LINK_CREATE_COUNT"
 	_CONNECT_DB_RETRIES               = "CONNECT_DB_RETRIES"
 	_CONNECT_DB_RETRIES_WAIT_TIME_SEC = "CONNECT_DB_RETRIES_WAIT_TIME_SEC"

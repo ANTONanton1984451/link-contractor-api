@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	devMod "link-contractor-api/internal/app/mode/dev"
+	vkMod "link-contractor-api/internal/app/mode/vk"
 	"link-contractor-api/internal/auth"
 	"link-contractor-api/internal/controllers"
 	"link-contractor-api/internal/dal/pool"
@@ -12,7 +13,6 @@ import (
 	vkPhraseManager "link-contractor-api/internal/phrases/vk"
 	"link-contractor-api/internal/presenter/dev"
 	"link-contractor-api/internal/presenter/vk"
-	"link-contractor-api/internal/redirect"
 	"link-contractor-api/internal/usecase/link/activatepath"
 	"link-contractor-api/internal/usecase/link/create"
 	"link-contractor-api/internal/usecase/link/deactivatepath"
@@ -21,11 +21,11 @@ import (
 )
 
 // todo здесь можно сделать DI контейнер, но т.к. компонентов мало, то я не буду так делать
-func GetEntryPointForDev(config EntrypointConfig) entrypoint.Entrypoint {
-	rd := redirect.New()
 
+// GetEntrypointForDev получение Entrypoint для разработки
+func GetEntrypointForDev(config EntrypointConfig) entrypoint.Entrypoint {
 	userRepo := user.New(pool.GetPool())
-	linkRepo := link.New(pool.GetPool(), rd)
+	linkRepo := link.New(pool.GetPool())
 
 	linkPr := dev.NewLinkPresenter()
 	ePointPresenter := dev.NewEntryPointPresenter()
@@ -49,11 +49,10 @@ func GetEntryPointForDev(config EntrypointConfig) entrypoint.Entrypoint {
 	return ePoint
 }
 
-func GetEntryPointForVk(config EntrypointConfig) entrypoint.Entrypoint {
-	rd := redirect.New()
-
+// GetEntrypointForVk получение Entrypoint для работы в вк
+func GetEntrypointForVk(config EntrypointConfig) entrypoint.Entrypoint {
 	userRepo := user.New(pool.GetPool())
-	linkRepo := link.New(pool.GetPool(), rd)
+	linkRepo := link.New(pool.GetPool())
 
 	linkPr := vk.NewLinkPresenter()
 	ePointPresenter := vk.NewEntryPointPresenter()
@@ -77,6 +76,12 @@ func GetEntryPointForVk(config EntrypointConfig) entrypoint.Entrypoint {
 	return ePoint
 }
 
-func GetHandlerPresenter() devMod.Presenter {
+// GetHandlerPresenterForDev презентор для дев режима работы
+func GetHandlerPresenterForDev() devMod.Presenter {
 	return dev.NewHandlerPresenter()
+}
+
+// GetHandlerPresenterForVk презентор для режима работы для вк
+func GetHandlerPresenterForVk() vkMod.Presenter {
+	return vk.NewHandlerPresenter()
 }

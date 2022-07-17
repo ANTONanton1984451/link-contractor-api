@@ -8,6 +8,7 @@ import (
 
 var _alphabet = []rune(`ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-`)
 
+// GenerateRandomPath генерация пути опрделённой длин, критичиское бизнес-правило
 func GenerateRandomPath(length int64) string {
 	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
 

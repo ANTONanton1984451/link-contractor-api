@@ -5,6 +5,7 @@ import (
 	"flag"
 )
 
+// StartArgs аргументы запуска приложения
 type StartArgs struct {
 	ConfigPath string
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"link-contractor-api/internal/entities/link"
 	"link-contractor-api/internal/entities/user"
 	"link-contractor-api/internal/usecase/link/create"
 	"link-contractor-api/internal/usecase/link/list"
@@ -11,6 +12,7 @@ import (
 	"github.com/jackc/pgx"
 )
 
+// UserHasThisLink импелементация интерйейса юзкейса создания ссылки
 func (repo *repository) UserHasThisLink(ctx context.Context, linkToCheck string, userID int64) (bool, error) {
 	conn, err := repo.pool.GetConn(ctx)
 	if err != nil {
@@ -32,6 +34,7 @@ func (repo *repository) UserHasThisLink(ctx context.Context, linkToCheck string,
 	return true, nil
 }
 
+// InsertLink импелентация интерфейса создания ссылки
 func (repo *repository) InsertLink(ctx context.Context, link create.NewLink) (err error) {
 	conn, err := repo.pool.GetConn(ctx)
 	if err != nil {
@@ -42,7 +45,6 @@ func (repo *repository) InsertLink(ctx context.Context, link create.NewLink) (er
 		return fmt.Errorf("start tx: %w", err)
 	}
 
-	// todo в клозер отдельный в идеале, но можно и повременить пока что
 	defer func() {
 		var closeErr error
 
@@ -62,18 +64,17 @@ func (repo *repository) InsertLink(ctx context.Context, link create.NewLink) (er
 	q, a := insertLinkQuery(link.Path, link.RedirectTo, link.UserID, link.Type)
 	_, err = conn.Exec(q, a...)
 	if err != nil {
-		// todo так лучше не делать, иначе теряется переиспользуемость данной функции
-		// тоже самое и со структурами
-		// лучше всего делать приватные обобщённые методы и уже публичные методы, заточенные под юзкейсы
+		// проверка, не упёрлись ли мы в ограничения базы на уникальность пути
 		if isPathExistErr(err) {
 			return create.PathIsBusy
 		}
 		return err
 	}
 
-	return repo.redirect.Store(ctx, link.Path, link.RedirectTo)
+	return nil
 }
 
+// UserOwnThisPath импелментация интерфейса юзкейсов активации и деаквтиации пути
 func (repo *repository) UserOwnThisPath(ctx context.Context, path string, userID int64) (bool, error) {
 	conn, err := repo.pool.GetConn(ctx)
 	if err != nil {
@@ -127,6 +128,7 @@ func (repo *repository) ActivatePath(ctx context.Context, path string) error {
 	return nil
 }
 
+// ListLinks импелментация интерфейса для юзкейса получения ссылок
 func (repo *repository) ListLinks(ctx context.Context, usr user.User, option list.SelectOption) ([]list.Link, error) {
 	conn, err := repo.pool.GetConn(ctx)
 	if err != nil {
@@ -154,4 +156,25 @@ func (repo *repository) ListLinks(ctx context.Context, usr user.User, option lis
 	}
 
 	return linkList, nil
+}
+
+func (repo *repository) Get(ctx context.Context, path string) (*link.Link, error) {
+	conn, err := repo.pool.GetConn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get connection: %w", err)
+	}
+	defer conn.Close()
+
+	q, a := getLinkQuery(path)
+
+	var lnk link.Link
+
+	if err = conn.QueryRow(q, a...).Scan(&lnk.Path, &lnk.RedirectTo, &lnk.Active, &lnk.CreatedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get query: %w", err)
+	}
+
+	return &lnk, nil
 }
